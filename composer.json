@@ -1,0 +1,31 @@
+{
+    "name": "spookies-jp/narnia",
+    "type": "project",
+    "description": "Kingdom of Laravel",
+    "homepage": "https://github.com/spookies-jp/narnia",
+    "keywords": ["php","laravel"],
+    "require": {
+        "laravel/laravel": "^5.7"
+    },
+    "authors": [
+        {
+            "name": "nishizuka",
+            "email": "nishizuka@spookies.co.jp"
+        }
+    ],
+    "minimum-stability": "stable",
+    "scripts": {
+       	"test": "phpunit"
+    },
+    "autoload": {                                                                                                                                          
+        "psr-4": {
+            "Narnia\\": "."
+        }
+    },  
+    "autoload-dev": {
+        "psr-4": {
+            "Narnia\\": "."
+        }
+    },
+	"license": "LGPL-2.1-or-later"
+}
