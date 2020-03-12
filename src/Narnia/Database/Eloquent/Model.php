@@ -1,6 +1,6 @@
 <?php
 
-namespace App;
+namespace Narnia\Database\Eloquent;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;

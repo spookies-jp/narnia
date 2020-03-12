@@ -23,12 +23,12 @@
     },
     "autoload": {                                                                                                                                          
         "psr-4": {
-            "Narnia\\": "."
+            "Narnia\\": "src/Narnia/"
         }
     },  
     "autoload-dev": {
         "psr-4": {
-            "Narnia\\": "."
+            "Narnia\\": "src/Narnia/"
         }
     },
 	"license": "LGPL-2.1-or-later"
