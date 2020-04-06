@@ -4,7 +4,8 @@ namespace Narnia\Database\Eloquent;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-                                                                                                                                                                                               /**
+
+/**
  * Eloquent をベースとした、Modelの基底クラス
  * リクエストキャッシュの制御などを行う
  */
@@ -62,7 +63,8 @@ class Model extends \Illuminate\Database\Eloquent\Model
 
     protected static function getCacheKey(string $sql, array $params = []): string
     {
-        $implodeParams = static::implodeParams($params);                                                                                                                                               $seed = "{$sql}|{$implodeParams}";
+        $implodeParams = static::implodeParams($params);
+        $seed = "{$sql}|{$implodeParams}";
         return md5($seed);
     }
 
@@ -119,7 +121,8 @@ class Model extends \Illuminate\Database\Eloquent\Model
         return $descs;
     }
 
-    public static function boot()                                                                                                                                                                  {
+    public static function boot()
+    {
         parent::boot();
 
         // XXX 既存データに合わせて null を設定する
@@ -148,6 +151,4 @@ class Model extends \Illuminate\Database\Eloquent\Model
 
         return $ret->id;
     }
-
 }
-

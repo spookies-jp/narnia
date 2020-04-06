@@ -8,8 +8,9 @@
         "laravel/framework": "^5"
     },
     "require-dev": {
-        "phpunit/phpunit": "^7.5",
-        "psy/psysh": "@stable"
+        "phpunit/phpunit": "^8.3",
+        "psy/psysh": "@stable",
+        "orchestra/testbench": "^3.8"
     },
     "authors": [
         {
@@ -28,7 +29,8 @@
     },  
     "autoload-dev": {
         "psr-4": {
-            "Narnia\\": "src/Narnia/"
+            "Narnia\\": "src/Narnia/",
+            "Tests\\": "tests/"
         }
     },
 	"license": "LGPL-2.1-or-later"
