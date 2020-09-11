@@ -3,47 +3,91 @@
 namespace Narnia\Services;
 
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
+use RuntimeException;
 
 /**
  * キャッシュプロキシ―
+ * Laravel のキャッシュの仕組みを、アプリから利用する為に、
+ * 挟み込む Proxy として機能する
+ * 
+ * @var string $origin
+ * @var string $driver
+ * @var int $ttl
+ * @var string[] $tags
  */
 class CacheProxy
 {
 
-    protected static $origin;
-    protected static $driver;
-    protected static $ttl;
+    protected $origin;
+    protected $driver;
+    protected $ttl = -1;
+    protected $tags = [];
 
-    public static function proxy($origin, ?string $driver = null, ?int $ttl = -1)
+    /**
+     * Proxy インスタンスを生成する
+     * メソッドのキャシュを利用したいクラスで呼び出す
+     *
+     * @param string $origin
+     * @param string|null $driver
+     * @param integer|null $ttl
+     * @param array|null $tags
+     * @return void
+     */
+    public static function proxy(string $origin, ?string $driver = null, ?int $ttl = -1, ?array $tags = [])
     {
-        if (static::$origin) {
-            Log::debug("old cache : " . static::$origin);
-        }
-
-        $class = get_called_class();
-        $class::$origin = $origin;
-        $class::$driver = $driver;
-        $class::$ttl = $ttl;
-        return $class;
-    }
-    public static function reset()
-    {
-        static::$origin = null;
-        static::$driver = null;
-        static::$ttl = 0;
+        $proxy = new static($origin, $driver, $ttl, $tags);
+        return $proxy;
     }
 
+    /**
+     * static な呼び出しは、現在対応していない
+     *
+     * @param [type] $name
+     * @param [type] $arguments
+     * @return void
+     */
     public static function __callStatic($name, $arguments)
     {
-        $driver = static::$driver;
-        $class = static::$origin;
-        $ttl   = static::$ttl;
-        $store = "Cache";
+        throw new RuntimeException("callStatic is not supported. Please call instance method. {$name}");
+    }
 
-        $cacheName = static::getCacheKey($class, $name, $arguments);
-        if ($driver) {
-            $store = Cache::store($driver);
+    /**
+     * コンストラクタ
+     * proxy メソッドと同じだが、インスタンス生成部分は拡張も想定して隠蔽する
+     *
+     * @param string $origin
+     * @param string|null $driver
+     * @param integer|null $ttl
+     * @param array|null $tags
+     */
+    public function __construct(string $origin, ?string $driver = null, ?int $ttl = -1, ?array $tags = [])
+    {
+        $tags[] = $origin;          // オリジナルのクラス名を、タグとして追加する
+        $this->origin = $origin;
+        $this->driver = $driver;
+        $this->ttl = $ttl;
+        $this->tags = $tags;
+    }
+
+    /**
+     * 実体クラスを透過させるためのメソッド
+     *
+     * @param string $name
+     * @param array $arguments
+     * @return mixed
+     */
+    public function __call($name, $arguments)
+    {
+        $driver = $this->driver;
+        $class = $this->origin;
+        $ttl   = $this->ttl;
+        $tags = $this->tags;
+
+        $cacheName = $this->getCacheKey($class, $name, $arguments);
+        $repository = Cache::store($driver);
+        if(method_exists($repository->getStore(), 'tags')){
+            /** @var \Illuminate\Contracts\Cache\Store\TaggedCache $repository */
+            $repository = $repository->tags($tags);
         }
 
         $func = function () use ($class, $name, $arguments) {
@@ -53,15 +97,22 @@ class CacheProxy
         };
 
         if ($ttl < 0) {
-            $ret = call_user_func([$store, 'rememberForever'], $cacheName, $func);
+            $ret =  $repository->rememberForever($cacheName, $func);
         } else {
-            $ret = call_user_func([$store, 'remember'], $cacheName, $ttl, $func);
+            $ret =  $repository->remember($cacheName, $ttl, $func);
         }
-        static::reset();
         return $ret;
     }
 
-    public static function getCacheKey($className, $funcName, $arguments): string
+    /**
+     * キャッシュする為のキー生成
+     *
+     * @param string $className
+     * @param string $funcName
+     * @param array $arguments
+     * @return string
+     */
+    public function getCacheKey(string $className, string $funcName, $arguments): string
     {
         $f = function ($x) {
             if (is_array($x)) {
@@ -74,5 +125,25 @@ class CacheProxy
         $paramKey = implode(',', $a);
         $cacheKey = "_{$className}#{$funcName}({$paramKey})";
         return $cacheKey;
+    }
+
+    /**
+     * タグ付けによるキャッシュ解放
+     *
+     * @return void
+     */
+    public function flush()
+    {
+        $driver = $this->driver;
+        $class = $this->origin;     // コンストラクタで、自身のクラス名は入っているのでオリジナルのクラス名を利用する箇所はない
+        $tags = $this->tags;
+
+        $repository = Cache::store($driver);
+        if(method_exists($repository->getStore(), 'tags')){
+            /** @var \Illuminate\Contracts\Cache\Store\TaggedCache $repository */
+            $repository = $repository->tags($tags);
+            return $repository->flush();
+        }
+        return $repository->clear();
     }
 }
