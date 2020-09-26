@@ -3,6 +3,7 @@
 namespace Narnia\Services;
 
 use Illuminate\Support\Facades\Cache;
+use Narnia\Dto\NullObject;
 use RuntimeException;
 
 /**
@@ -93,52 +94,22 @@ class CacheProxy
         $func = function () use ($class, $name, $arguments) {
             //echo "Calling static method '$name' " . implode(', ', $arguments). "\n";
             $ret = call_user_func([$class, $name], ...$arguments);
+            if(is_null($ret)){
+                // Null がキャッシュされない問題を回避する
+                $ret = new NullObject();
+            }
             return $ret;
         };
 
         if ($ttl < 0) {
-            $ret =  $this->rememberForever($repository, $cacheName, $func);
+            $ret =  $repository->rememberForever($cacheName, $func);
         } else {
-            $ret =  $this->remember($repository, $cacheName, $ttl, $func);
+            $ret =  $repository->remember($cacheName, $ttl, $func);
+        }
+        if($ret instanceof NullObject){
+            $ret = null;
         }
         return $ret;
-    }
-    /**
-     * null をキャッシュする為に、rememberForeverを真似て特別処理
-     *
-     * @param [type] $repository
-     * @param string $key
-     * @param [type] $callback
-     * @return void
-     */
-    protected function rememberForever($repository, string $key, $callback)
-    {
-        if ($repository->has($key)){
-            return $repository->get($key);
-        }
-
-        $repository->forever($key, $value = $callback());
-
-        return $value;
-    }
-    /**
-     * null をキャッシュする為に、rememberを真似て特別処理
-     *
-     * @param [type] $repository
-     * @param string $key
-     * @param integer $ttl
-     * @param [type] $callback
-     * @return void
-     */
-    protected function remember($repository, string $key, int $ttl, $callback)
-    {
-        if ($repository->has($key)) {
-            return $repository->get($key);
-        }
-
-        $repository->put($key, $value = $callback(), $ttl);
-
-        return $value;
     }
 
     /**
