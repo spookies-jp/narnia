@@ -97,11 +97,48 @@ class CacheProxy
         };
 
         if ($ttl < 0) {
-            $ret =  $repository->rememberForever($cacheName, $func);
+            $ret =  $this->rememberForever($repository, $cacheName, $func);
         } else {
-            $ret =  $repository->remember($cacheName, $ttl, $func);
+            $ret =  $this->remember($repository, $cacheName, $ttl, $func);
         }
         return $ret;
+    }
+    /**
+     * null をキャッシュする為に、rememberForeverを真似て特別処理
+     *
+     * @param [type] $repository
+     * @param string $key
+     * @param [type] $callback
+     * @return void
+     */
+    protected function rememberForever($repository, string $key, $callback)
+    {
+        if ($repository->has($key)){
+            return $repository->get($key);
+        }
+
+        $repository->forever($key, $value = $callback());
+
+        return $value;
+    }
+    /**
+     * null をキャッシュする為に、rememberを真似て特別処理
+     *
+     * @param [type] $repository
+     * @param string $key
+     * @param integer $ttl
+     * @param [type] $callback
+     * @return void
+     */
+    protected function remember($repository, string $key, int $ttl, $callback)
+    {
+        if ($repository->has($key)) {
+            return $repository->get($key);
+        }
+
+        $repository->put($key, $value = $callback(), $ttl);
+
+        return $value;
     }
 
     /**
