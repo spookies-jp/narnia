@@ -121,7 +121,10 @@ class Model extends \Illuminate\Database\Eloquent\Model
         return $descs;
     }
 
-    public static function boot()
+    /**
+     * attention please
+     */
+    protected static function boot()
     {
         parent::boot();
 
