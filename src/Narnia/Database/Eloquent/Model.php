@@ -3,14 +3,14 @@
 namespace Narnia\Database\Eloquent;
 
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-
+use Narnia\Services\CacheProxy;
 /**
  * Eloquent をベースとした、Modelの基底クラス
  * リクエストキャッシュの制御などを行う
  */
 class Model extends \Illuminate\Database\Eloquent\Model
 {
+    const CACHE_SERV_TTL = 300;     // 5min
 
     /**
      * @var  array  cached queries
@@ -154,4 +154,36 @@ class Model extends \Illuminate\Database\Eloquent\Model
 
         return $ret->id;
     }
+
+    /**
+     * リクストスコープのキャッシュProxy
+     *
+     * @return static
+     */
+    public static function cacheReq()
+    {
+        return CacheProxy::proxy(static::class, 'array');
+    }
+    /**
+     * サーバースコープ(APC)のキャッシュProxy
+     * @category Orverride
+     * @param array|null $tags
+     * @return static
+     */
+    public static function cacheServ(?int $ttl=self::CACHE_SERV_TTL, ?array $tags=[])
+    {
+        return CacheProxy::proxy(static::class, 'apc', $ttl, $tags);
+    }
+
+    /**
+     * システムスコープ(Redis)のキャッシュProxy
+     *
+     * @param array|null $tags
+     * @return static
+     */
+    public static function cacheSys(?array $tags=[])
+    {
+        return CacheProxy::proxy(static::class, 'redis', 300, $tags);
+    }
+
 }
