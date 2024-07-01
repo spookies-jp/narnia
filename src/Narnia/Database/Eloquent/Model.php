@@ -121,32 +121,6 @@ class Model extends \Illuminate\Database\Eloquent\Model
         return $descs;
     }
 
-    /**
-     * attention please
-     */
-    protected static function boot()
-    {
-        parent::boot();
-
-        // XXX 既存データに合わせて null を設定する
-        static::saving(function ($model) {
-            foreach ($model->attributes as $key => $value) {
-                $origin = $model->original[$key] ?? "";
-                if ($origin == $value) {
-                    // 変更ない項目は、更新対象にしない
-                    unset($model->attributes[$key]);
-                    continue;
-                }
-                /*
-                if ( !isset($model->original[$key]) || $model->original[$key] === null){
-                    $model->{$key} = empty($value) ? null : $value;
-                }
-                */
-            }
-        });
-    }
-
-
     public static function getLastInsertId(): int
     {
         $sql = "SELECT last_insert_id() AS id";
